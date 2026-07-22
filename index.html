@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>spleen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper: #F5F1E6;
+    --bg: var(--paper);
     --ink: #24304A;
     --ink-soft: #5A6480;
     --accent: #E1512F;
@@ -21,10 +22,11 @@
   body{
     margin:0;
     min-height:100vh;
-    background: var(--paper);
+    background-color: var(--bg);
     background-image:
       radial-gradient(circle at 1px 1px, rgba(36,48,74,0.06) 1px, transparent 0);
     background-size: 22px 22px;
+    transition: background-color .5s ease;
     color: var(--ink);
     font-family: 'Inter', system-ui, sans-serif;
     display:flex;
@@ -35,10 +37,10 @@
   }
 
   .site-title{
-    font-family:'Baloo 2', sans-serif;
-    font-weight:700;
-    font-size: clamp(20px, 3vw, 26px);
-    letter-spacing: 0.3px;
+    font-family:'Archivo Black', sans-serif;
+    font-weight:400;
+    font-size: clamp(22px, 3vw, 28px);
+    letter-spacing: 0.5px;
     color: var(--ink-soft);
     margin-bottom: 28px;
     text-transform: uppercase;
@@ -82,28 +84,9 @@
   .frame{
     flex: 1 1 auto;
     position:relative;
-    background: var(--card);
-    border-radius: 14px;
-    padding: 14px 14px 22px 14px;
-    box-shadow: 0 12px 30px rgba(36,48,74,0.14);
-    /* mantém a moldura sempre quadrada, independentemente da largura do ecrã */
+    /* mantém o quadrado sempre com a mesma proporção, independentemente da largura do ecrã */
     aspect-ratio: 1 / 1;
     display:flex;
-  }
-
-  .sprocket{
-    position:absolute;
-    left:14px; right:14px;
-    height: 10px;
-    display:flex;
-    justify-content:space-between;
-  }
-  .sprocket.top{ top: -5px; }
-  .sprocket.bottom{ bottom: -5px; }
-  .sprocket span{
-    width:10px; height:10px; border-radius:50%;
-    background: var(--paper);
-    box-shadow: inset 0 0 0 2px rgba(36,48,74,0.08);
   }
 
   .frame img{
@@ -111,7 +94,6 @@
     width:100%;
     height:100%;
     object-fit: contain;
-    border-radius: 6px;
     background: #eee;
   }
 
@@ -133,7 +115,6 @@
   @media (max-width: 560px){
     .stage{ gap: 10px; }
     .arrow{ width: 38px; height:38px; font-size:16px; }
-    .frame{ padding: 10px 10px 16px 10px; }
   }
 </style>
 </head>
@@ -146,10 +127,8 @@
       <button class="arrow" id="prevBtn" aria-label="Painel anterior">&#10094;</button>
 
       <div class="frame">
-        <div class="sprocket top" id="sprocketTop"></div>
         <img id="stripImage" src="" alt="" style="display:none;">
         <div id="stateMsg" class="state-msg">A carregar…</div>
-        <div class="sprocket bottom" id="sprocketBottom"></div>
       </div>
 
       <button class="arrow" id="nextBtn" aria-label="Painel seguinte">&#10095;</button>
@@ -160,8 +139,8 @@
   // =================================================================
   // CONFIGURAÇÃO — só precisas de preencher isto UMA VEZ
   // =================================================================
-  const OWNER  = "national-day";   // ex: "joaosilva"
-  const REPO   = "SPLEEN"; // ex: "as-minhas-tiras"
+  const OWNER  = "O-TEU-UTILIZADOR-GITHUB";   // ex: "joaosilva"
+  const REPO   = "O-NOME-DO-TEU-REPOSITORIO"; // ex: "as-minhas-tiras"
   const BRANCH = "main";                      // normalmente "main"
   const FOLDER = "strips";                    // pasta onde colocas as imagens
   // =================================================================
@@ -183,9 +162,35 @@
   const PANEL_FILE = /^(\d+)-(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
   const SINGLE_FILE = /^(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
 
+  // ---------------------------------------------------------------
+  // PALETA DE FUNDO — muda de cor sempre que se passa para uma tira diferente
+  // Acrescenta, remove ou troca cores aqui à vontade.
+  // ---------------------------------------------------------------
+  const BG_PALETTE = [
+    "#F71107",
+    "#0A5220",
+    "#FEE918",
+    "#38C2FC",
+    "#1E60FF",
+    "#F87608",
+    "#FFC1C5",
+    "#5B3B1A"
+  ];
+
+  let lastBgIndex = null;
+  function applyRandomBackground(){
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * BG_PALETTE.length);
+    } while (BG_PALETTE.length > 1 && idx === lastBgIndex);
+    lastBgIndex = idx;
+    document.documentElement.style.setProperty('--bg', BG_PALETTE[idx]);
+  }
+
   let strips = [];      // [{ title, panels: [file, file, ...] }]
   let stripIndex = 0;
   let panelIndex = 0;
+  let lastRenderedStripIndex = null;
 
   const imgEl = document.getElementById('stripImage');
   const stateMsgEl = document.getElementById('stateMsg');
@@ -277,6 +282,10 @@
   }
 
   function render(){
+    if (stripIndex !== lastRenderedStripIndex){
+      applyRandomBackground();
+      lastRenderedStripIndex = stripIndex;
+    }
     const strip = strips[stripIndex];
     imgEl.src = strip.panels[panelIndex];
     imgEl.alt = strip.title + ' — painel ' + (panelIndex + 1);
