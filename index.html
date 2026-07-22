@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>spleen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F5F1E6;
+    --ink: #24304A;
+    --ink-soft: #5A6480;
+    --accent: #E1512F;
+    --accent-soft: #F3D9C9;
+    --card: #FFFFFF;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(36,48,74,0.06) 1px, transparent 0);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 32px 16px;
+  }
+
+  .site-title{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size: clamp(20px, 3vw, 26px);
+    letter-spacing: 0.3px;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+
+  .viewer{
+    width: min(560px, 92vw);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .stage{
+    display:flex;
+    align-items:center;
+    gap: 18px;
+    width:100%;
+  }
+
+  .arrow{
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--card);
+    color: var(--ink);
+    font-size: 20px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 2px 10px rgba(36,48,74,0.12);
+    transition: transform .15s ease, background .15s ease, color .15s ease;
+  }
+  .arrow:hover{ background: var(--accent); color: #fff; transform: translateY(-2px); }
+  .arrow:active{ transform: translateY(0); }
+  .arrow:disabled{ opacity:0.35; cursor:default; box-shadow:none; }
+  .arrow:disabled:hover{ background: var(--card); color: var(--ink); transform:none; }
+
+  .frame{
+    flex: 1 1 auto;
+    position:relative;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 14px 22px 14px;
+    box-shadow: 0 12px 30px rgba(36,48,74,0.14);
+    /* mantém a moldura sempre quadrada, independentemente da largura do ecrã */
+    aspect-ratio: 1 / 1;
+    display:flex;
+  }
+
+  .sprocket{
+    position:absolute;
+    left:14px; right:14px;
+    height: 10px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .sprocket.top{ top: -5px; }
+  .sprocket.bottom{ bottom: -5px; }
+  .sprocket span{
+    width:10px; height:10px; border-radius:50%;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 2px rgba(36,48,74,0.08);
+  }
+
+  .frame img{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #eee;
+  }
+
+  .state-msg{
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height:1.5;
+    padding: 20px;
+    margin: auto;
+  }
+  .state-msg a{ color: var(--accent); font-weight:600; }
+  .state-msg code{
+    background: var(--accent-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 560px){
+    .stage{ gap: 10px; }
+    .arrow{ width: 38px; height:38px; font-size:16px; }
+    .frame{ padding: 10px 10px 16px 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="site-title">spleen</div>
+
+  <div class="viewer">
+    <div class="stage">
+      <button class="arrow" id="prevBtn" aria-label="Painel anterior">&#10094;</button>
+
+      <div class="frame">
+        <div class="sprocket top" id="sprocketTop"></div>
+        <img id="stripImage" src="" alt="" style="display:none;">
+        <div id="stateMsg" class="state-msg">A carregar…</div>
+        <div class="sprocket bottom" id="sprocketBottom"></div>
+      </div>
+
+      <button class="arrow" id="nextBtn" aria-label="Painel seguinte">&#10095;</button>
+    </div>
+  </div>
+
+<script>
+  // =================================================================
+  // CONFIGURAÇÃO — só precisas de preencher isto UMA VEZ
+  // =================================================================
+  const OWNER  = "O-TEU-UTILIZADOR-GITHUB";   // ex: "joaosilva"
+  const REPO   = "O-NOME-DO-TEU-REPOSITORIO"; // ex: "as-minhas-tiras"
+  const BRANCH = "main";                      // normalmente "main"
+  const FOLDER = "strips";                    // pasta onde colocas as imagens
+  // =================================================================
+  //
+  // CONVENÇÃO DE NOMES DOS FICHEIROS
+  // "NN-PP - Título da Tira.png"
+  //   NN = número da tira        (mesma para todos os painéis dessa tira)
+  //   PP = número do painel      (1, 2, 3... dentro dessa tira)
+  // Exemplos:
+  //   01-01 - O Reflexo no Lago.png
+  //   01-02 - O Reflexo no Lago.png
+  //   01-03 - O Reflexo no Lago.png
+  //   02-01 - Outra Tira.png
+  //
+  // Também aceita ficheiros só com "NN - Título.png" (tira de um único painel).
+  // =================================================================
+
+  const IMAGE_EXT = /\.(png|jpe?g|gif|webp)$/i;
+  const PANEL_FILE = /^(\d+)-(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
+  const SINGLE_FILE = /^(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
+
+  let strips = [];      // [{ title, panels: [file, file, ...] }]
+  let stripIndex = 0;
+  let panelIndex = 0;
+
+  const imgEl = document.getElementById('stripImage');
+  const stateMsgEl = document.getElementById('stateMsg');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function parseFilename(filename, fallbackIndex){
+    const panelMatch = filename.match(PANEL_FILE);
+    if (panelMatch){
+      return {
+        stripOrder: parseInt(panelMatch[1], 10),
+        panelOrder: parseInt(panelMatch[2], 10),
+        title: panelMatch[3].trim()
+      };
+    }
+    const singleMatch = filename.match(SINGLE_FILE);
+    if (singleMatch){
+      return {
+        stripOrder: parseInt(singleMatch[1], 10),
+        panelOrder: 1,
+        title: singleMatch[2].trim()
+      };
+    }
+    return {
+      stripOrder: 100000 + fallbackIndex,
+      panelOrder: 1,
+      title: filename.replace(IMAGE_EXT, '').replace(/[_-]+/g, ' ').trim()
+    };
+  }
+
+  function showState(message){
+    stateMsgEl.innerHTML = message;
+    stateMsgEl.style.display = 'block';
+    imgEl.style.display = 'none';
+  }
+
+  async function loadStrips(){
+    if (OWNER === "O-TEU-UTILIZADOR-GITHUB" || REPO === "O-NOME-DO-TEU-REPOSITORIO"){
+      showState("Ainda não preencheste o teu utilizador e repositório do GitHub no topo do <code>&lt;script&gt;</code> do index.html.");
+      return;
+    }
+
+    try {
+      const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FOLDER}?ref=${BRANCH}`;
+      const res = await fetch(url);
+
+      if (res.status === 404){
+        showState(`Não encontrei a pasta <code>${FOLDER}/</code> no repositório <code>${OWNER}/${REPO}</code>. Confirma o nome do utilizador, do repositório e da pasta.`);
+        return;
+      }
+      if (!res.ok){
+        showState("O GitHub não respondeu como esperado. Tenta recarregar a página daqui a um bocado.");
+        return;
+      }
+
+      const files = await res.json();
+      const images = files.filter(f => f.type === 'file' && IMAGE_EXT.test(f.name));
+
+      if (images.length === 0){
+        showState(`Arrasta imagens para a pasta <code>${FOLDER}/</code> no GitHub e recarrega esta página.`);
+        return;
+      }
+
+      const parsed = images.map((f, i) => ({ ...parseFilename(f.name, i), file: f.download_url }));
+      parsed.sort((a, b) => a.stripOrder - b.stripOrder || a.panelOrder - b.panelOrder);
+
+      // agrupar painéis pela mesma tira (mesmo stripOrder consecutivo)
+      strips = [];
+      let lastStripOrder = null;
+      parsed.forEach(p => {
+        if (lastStripOrder === null || p.stripOrder !== lastStripOrder){
+          strips.push({ title: p.title, panels: [] });
+          lastStripOrder = p.stripOrder;
+        }
+        strips[strips.length - 1].panels.push(p.file);
+      });
+
+      stateMsgEl.style.display = 'none';
+      imgEl.style.display = 'block';
+      render();
+    } catch (err){
+      showState("Não consegui contactar o GitHub. Verifica a tua ligação à internet e recarrega a página.");
+    }
+  }
+
+  function atVeryStart(){ return stripIndex === 0 && panelIndex === 0; }
+  function atVeryEnd(){
+    return stripIndex === strips.length - 1 && panelIndex === strips[stripIndex].panels.length - 1;
+  }
+
+  function render(){
+    const strip = strips[stripIndex];
+    imgEl.src = strip.panels[panelIndex];
+    imgEl.alt = strip.title + ' — painel ' + (panelIndex + 1);
+    prevBtn.disabled = atVeryStart();
+    nextBtn.disabled = atVeryEnd();
+  }
+
+  function goNext(){
+    if (atVeryEnd()) return;
+    const strip = strips[stripIndex];
+    if (panelIndex < strip.panels.length - 1){
+      panelIndex++;
+    } else {
+      stripIndex++;
+      panelIndex = 0;
+    }
+    render();
+  }
+
+  function goPrev(){
+    if (atVeryStart()) return;
+    if (panelIndex > 0){
+      panelIndex--;
+    } else {
+      stripIndex--;
+      panelIndex = strips[stripIndex].panels.length - 1;
+    }
+    render();
+  }
+
+  prevBtn.addEventListener('click', goPrev);
+  nextBtn.addEventListener('click', goNext);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') goPrev();
+    if (e.key === 'ArrowRight') goNext();
+  });
+
+  // deslizar no telemóvel
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const diff = e.changedTouches[0].clientX - touchX;
+    if (diff > 50) goPrev();
+    if (diff < -50) goNext();
+    touchX = null;
+  });
+
+  loadStrips();
+</script>
+</body>
+</html>
