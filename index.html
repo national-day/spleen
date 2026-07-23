@@ -159,6 +159,7 @@
 
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp)$/i;
   const PANEL_FILE = /^(\d+)-(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
+  const PANEL_FILE_NO_TITLE = /^(\d+)-(\d+)\.(png|jpe?g|gif|webp)$/i;
   const SINGLE_FILE = /^(\d+)\s*-\s*(.+)\.(png|jpe?g|gif|webp)$/i;
 
   // ---------------------------------------------------------------
@@ -203,6 +204,14 @@
         stripOrder: parseInt(panelMatch[1], 10),
         panelOrder: parseInt(panelMatch[2], 10),
         title: panelMatch[3].trim()
+      };
+    }
+    const noTitleMatch = filename.match(PANEL_FILE_NO_TITLE);
+    if (noTitleMatch){
+      return {
+        stripOrder: parseInt(noTitleMatch[1], 10),
+        panelOrder: parseInt(noTitleMatch[2], 10),
+        title: ''
       };
     }
     const singleMatch = filename.match(SINGLE_FILE);
