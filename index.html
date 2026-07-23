@@ -6,6 +6,7 @@
 <title>spleen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.44.0/tabler-icons.min.css">
 <style>
   :root{
     --paper: #F5F1E6;
@@ -62,24 +63,22 @@
 
   .arrow{
     flex: 0 0 auto;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius, 8px);
     border: none;
-    background: var(--card);
-    color: var(--ink);
-    font-size: 20px;
+    background: none;
+    color: #FFFFFF;
+    font-size: 26px;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow: 0 2px 10px rgba(36,48,74,0.12);
-    transition: transform .15s ease, background .15s ease, color .15s ease;
+    transition: color .25s ease, transform .15s ease;
   }
-  .arrow:hover{ background: var(--accent); color: #fff; transform: translateY(-2px); }
-  .arrow:active{ transform: translateY(0); }
-  .arrow:disabled{ opacity:0.35; cursor:default; box-shadow:none; }
-  .arrow:disabled:hover{ background: var(--card); color: var(--ink); transform:none; }
+  .arrow:active{ transform: scale(0.9); }
+  .arrow:disabled{ opacity:0.3; cursor:default; }
+  .arrow:disabled:hover{ transform:none; }
 
   .frame{
     flex: 1 1 auto;
@@ -124,14 +123,14 @@
 
   <div class="viewer">
     <div class="stage">
-      <button class="arrow" id="prevBtn" aria-label="Painel anterior">&#10094;</button>
+      <button class="arrow" id="prevBtn" aria-label="Painel anterior"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
 
       <div class="frame">
         <img id="stripImage" src="" alt="" style="display:none;">
         <div id="stateMsg" class="state-msg">A carregar…</div>
       </div>
 
-      <button class="arrow" id="nextBtn" aria-label="Painel seguinte">&#10095;</button>
+      <button class="arrow" id="nextBtn" aria-label="Painel seguinte"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
     </div>
   </div>
 
@@ -318,6 +317,15 @@
 
   prevBtn.addEventListener('click', goPrev);
   nextBtn.addEventListener('click', goNext);
+
+  // setas: cor aleatória da paleta ao passar o rato, volta a branco ao sair
+  function randomPaletteColor(){
+    return BG_PALETTE[Math.floor(Math.random() * BG_PALETTE.length)];
+  }
+  [prevBtn, nextBtn].forEach(btn => {
+    btn.addEventListener('mouseenter', () => { btn.style.color = randomPaletteColor(); });
+    btn.addEventListener('mouseleave', () => { btn.style.color = '#FFFFFF'; });
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') goPrev();
