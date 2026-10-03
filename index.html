@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>spleen</title>
+
+<!-- Pré-visualização ao partilhar o link (WhatsApp, Instagram, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="spleen">
+<meta property="og:description" content="a repository of melancholy, friendship, sadness and ill humor">
+<meta property="og:url" content="https://national-day.github.io/spleen/">
+<meta property="og:image" content="https://national-day.github.io/spleen/preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="spleen">
+<meta name="twitter:description" content="a repository of melancholy, friendship, sadness and ill humor">
+<meta name="twitter:image" content="https://national-day.github.io/spleen/preview.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.44.0/tabler-icons.min.css">
@@ -34,45 +46,58 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding: 32px 16px;
+    padding: 40px 16px 32px;
+  }
+
+  .news-ticker{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 12px;
+    background-color: var(--ticker-bg, #24304A);
+    overflow: hidden;
+    display:flex;
+    align-items:center;
+    z-index: 100;
+  }
+
+  .news-ticker__track{
+    display:flex;
+    white-space:nowrap;
+    will-change: transform;
+    animation: news-scroll linear infinite;
+  }
+
+  .news-ticker__seg{
+    display:inline-flex;
+    align-items:center;
+    color:#FFFFFF;
+    font-size: 9px;
+    line-height: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    padding-right: 32px;
+  }
+
+  @keyframes news-scroll{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(-50%); }
   }
 
   .viewer{
-    width: min(560px, 92vw);
+    width: min(640px, 96vw);
+    position: relative;
     display:flex;
     flex-direction:column;
     align-items:center;
   }
 
   .stage{
-    display:flex;
-    align-items:center;
-    gap: 18px;
     width:100%;
   }
 
-  .arrow{
-    flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius, 8px);
-    border: none;
-    background: none;
-    color: #FFFFFF;
-    font-size: 26px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition: color .25s ease, transform .15s ease;
-  }
-  .arrow:active{ transform: scale(0.9); }
-  .arrow:disabled{ opacity:0.3; cursor:default; }
-  .arrow:disabled:hover{ transform:none; }
-
   .frame{
-    flex: 1 1 auto;
     position:relative;
+    width:100%;
     /* mantém o quadrado sempre com a mesma proporção, independentemente da largura do ecrã */
     aspect-ratio: 1 / 1;
     display:flex;
@@ -84,7 +109,37 @@
     height:100%;
     object-fit: contain;
     background: #eee;
+    opacity: 0;
+    transition: opacity .2s ease;
   }
+  .frame img.is-loaded{ opacity: 1; }
+
+  .controls{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 28px;
+    margin-top: 18px;
+  }
+
+  .arrow{
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.28);
+    color: #FFFFFF;
+    font-size: 22px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: color .25s ease, background .2s ease, transform .15s ease;
+  }
+  .arrow:active{ transform: scale(0.9); }
+  .arrow:disabled{ opacity:0.3; cursor:default; }
+  .arrow:disabled:hover{ transform:none; }
 
   .state-msg{
     text-align:center;
@@ -101,23 +156,48 @@
     border-radius: 4px;
   }
 
-  @media (max-width: 560px){
-    .stage{ gap: 10px; }
-    .arrow{ width: 38px; height:38px; font-size:16px; }
+  @media (max-width: 420px){
+    .arrow{ width: 36px; height:36px; font-size:18px; }
+    body{ padding-left: 8px; padding-right: 8px; }
+  }
+
+  /* Desktop / ecrãs largos: as setas flutuam sobre as margens do painel,
+     em vez de ficarem numa linha por baixo (isso fica só para o telemóvel) */
+  @media (min-width: 641px){
+    .controls{
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
+      margin-top: 0;
+      justify-content: space-between;
+      padding: 0 8px;
+      pointer-events: none;
+    }
+    .controls .arrow{ pointer-events: auto; }
   }
 </style>
 </head>
 <body>
 
+  <div class="news-ticker" id="newsTicker">
+    <div class="news-ticker__track" id="newsTrack">
+      <span class="news-ticker__seg" id="newsSeg1">A carregar notícias…</span>
+      <span class="news-ticker__seg" id="newsSeg2" aria-hidden="true">A carregar notícias…</span>
+    </div>
+  </div>
+
   <div class="viewer">
     <div class="stage">
-      <button class="arrow" id="prevBtn" aria-label="Painel anterior"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
-
       <div class="frame">
         <img id="stripImage" src="" alt="" style="display:none;">
         <div id="stateMsg" class="state-msg">A carregar…</div>
       </div>
+    </div>
 
+    <div class="controls">
+      <button class="arrow" id="prevBtn" aria-label="Painel anterior"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
       <button class="arrow" id="nextBtn" aria-label="Painel seguinte"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
     </div>
   </div>
@@ -143,6 +223,14 @@
   //   02-01 - Outra Tira.png
   //
   // Também aceita ficheiros só com "NN - Título.png" (tira de um único painel).
+  // =================================================================
+
+  // =================================================================
+  // FAIXA DE NOTÍCIAS — preenche a tua chave gratuita do rss2json.com
+  // (Sign up em rss2json.com, copia a "API Key", cola aqui em baixo)
+  // =================================================================
+  const RSS2JSON_KEY = "A-TUA-CHAVE-RSS2JSON-AQUI";
+  const NEWS_FEED_URL = "https://feeds.bbci.co.uk/news/world/rss.xml";
   // =================================================================
 
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp)$/i;
@@ -277,16 +365,65 @@
     return stripIndex === strips.length - 1 && panelIndex === strips[stripIndex].panels.length - 1;
   }
 
+  // calculam o alvo seguinte/anterior sem mudar o estado atual — usados tanto
+  // para navegar como para saber o que pré-carregar
+  function nextTarget(){
+    if (atVeryEnd()) return null;
+    const strip = strips[stripIndex];
+    if (panelIndex < strip.panels.length - 1) return { stripIndex, panelIndex: panelIndex + 1 };
+    return { stripIndex: stripIndex + 1, panelIndex: 0 };
+  }
+  function prevTarget(){
+    if (atVeryStart()) return null;
+    if (panelIndex > 0) return { stripIndex, panelIndex: panelIndex - 1 };
+    return { stripIndex: stripIndex - 1, panelIndex: strips[stripIndex - 1].panels.length - 1 };
+  }
+
+  // guarda imagens já pedidas ao browser, para nunca as pedir duas vezes
+  const preloadedUrls = new Set();
+  function preloadImage(url){
+    if (!url || preloadedUrls.has(url)) return;
+    preloadedUrls.add(url);
+    const img = new Image();
+    img.src = url;
+  }
+  function preloadNeighbors(){
+    const next = nextTarget();
+    const prev = prevTarget();
+    if (next) preloadImage(strips[next.stripIndex].panels[next.panelIndex]);
+    if (prev) preloadImage(strips[prev.stripIndex].panels[prev.panelIndex]);
+  }
+
   function render(){
     if (stripIndex !== lastRenderedStripIndex){
       applyRandomBackground();
       lastRenderedStripIndex = stripIndex;
     }
     const strip = strips[stripIndex];
-    imgEl.src = strip.panels[panelIndex];
+    const url = strip.panels[panelIndex];
+
     imgEl.alt = strip.title + ' — painel ' + (panelIndex + 1);
     prevBtn.disabled = atVeryStart();
     nextBtn.disabled = atVeryEnd();
+
+    if (preloadedUrls.has(url)){
+      // já estava pré-carregada: troca instantânea, sem piscar
+      imgEl.src = url;
+      imgEl.classList.add('is-loaded');
+    } else {
+      // primeira vez a pedir esta imagem: só mostra quando estiver pronta
+      imgEl.classList.remove('is-loaded');
+      preloadedUrls.add(url);
+      const loader = new Image();
+      loader.onload = () => {
+        if (strips[stripIndex].panels[panelIndex] !== url) return; // o utilizador já saltou para outro painel
+        imgEl.src = url;
+        imgEl.classList.add('is-loaded');
+      };
+      loader.src = url;
+    }
+
+    preloadNeighbors();
   }
 
   function goNext(){
@@ -341,6 +478,62 @@
   });
 
   loadStrips();
+
+  // ---------------------------------------------------------------
+  // FAIXA DE NOTÍCIAS
+  // ---------------------------------------------------------------
+  const newsTicker = document.getElementById('newsTicker');
+  const newsTrack = document.getElementById('newsTrack');
+  const newsSeg1 = document.getElementById('newsSeg1');
+  const newsSeg2 = document.getElementById('newsSeg2');
+
+  function setTickerColor(){
+    newsTicker.style.setProperty('--ticker-bg', randomPaletteColor());
+  }
+
+  function startTickerAnimation(){
+    // velocidade constante, independente do tamanho do texto
+    const pxPerSecond = 70;
+    const width = newsSeg1.getBoundingClientRect().width;
+    const duration = Math.max(width / pxPerSecond, 10);
+    newsTrack.style.animationDuration = duration + 's';
+  }
+
+  async function loadNews(){
+    setTickerColor();
+
+    if (RSS2JSON_KEY === "A-TUA-CHAVE-RSS2JSON-AQUI"){
+      const msg = "Falta configurar a chave do rss2json.com no index.html   •   ";
+      newsSeg1.textContent = msg;
+      newsSeg2.textContent = msg;
+      startTickerAnimation();
+      return;
+    }
+
+    try {
+      const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(NEWS_FEED_URL)}&api_key=${RSS2JSON_KEY}&count=20`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.status !== 'ok' || !data.items || data.items.length === 0){
+        throw new Error('sem notícias');
+      }
+
+      const headlines = data.items.map(item => item.title);
+      const text = headlines.join('   •   ') + '   •   ';
+      newsSeg1.textContent = text;
+      newsSeg2.textContent = text;
+      startTickerAnimation();
+    } catch (err){
+      const msg = "Não foi possível carregar as notícias de momento   •   ";
+      newsSeg1.textContent = msg;
+      newsSeg2.textContent = msg;
+      startTickerAnimation();
+    }
+  }
+
+  loadNews();
+  setInterval(loadNews, 15 * 60 * 1000); // atualiza as notícias a cada 15 minutos
 </script>
 </body>
 </html>
