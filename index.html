@@ -46,58 +46,25 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding: 40px 16px 32px;
-  }
-
-  .news-ticker{
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 12px;
-    background-color: var(--ticker-bg, #24304A);
-    overflow: hidden;
-    display:flex;
-    align-items:center;
-    z-index: 100;
-  }
-
-  .news-ticker__track{
-    display:flex;
-    white-space:nowrap;
-    will-change: transform;
-    animation: news-scroll linear infinite;
-  }
-
-  .news-ticker__seg{
-    display:inline-flex;
-    align-items:center;
-    color:#FFFFFF;
-    font-size: 9px;
-    line-height: 12px;
-    font-weight: 500;
-    letter-spacing: 0.2px;
-    padding-right: 32px;
-  }
-
-  @keyframes news-scroll{
-    from{ transform: translateX(0); }
-    to{ transform: translateX(-50%); }
+    padding: 32px 16px;
   }
 
   .viewer{
     width: min(640px, 96vw);
-    position: relative;
     display:flex;
-    flex-direction:column;
+    flex-wrap: wrap;
     align-items:center;
-  }
-
-  .stage{
-    width:100%;
+    justify-content:center;
+    gap: 14px;
   }
 
   .frame{
     position:relative;
-    width:100%;
+    /* no telemóvel ocupa logo a linha toda (ver flex-basis), empurrando as
+       duas setas para a linha seguinte, juntas; no desktop partilha a linha
+       com as setas, uma de cada lado (ver media query mais abaixo) */
+    order: 1;
+    flex: 1 1 100%;
     /* mantém o quadrado sempre com a mesma proporção, independentemente da largura do ecrã */
     aspect-ratio: 1 / 1;
     display:flex;
@@ -114,15 +81,6 @@
   }
   .frame img.is-loaded{ opacity: 1; }
 
-  .controls{
-    width:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap: 28px;
-    margin-top: 18px;
-  }
-
   .arrow{
     width: 44px;
     height: 44px;
@@ -137,6 +95,8 @@
     justify-content:center;
     transition: color .25s ease, background .2s ease, transform .15s ease;
   }
+  #prevBtn{ order: 2; }
+  #nextBtn{ order: 3; }
   .arrow:active{ transform: scale(0.9); }
   .arrow:disabled{ opacity:0.3; cursor:default; }
   .arrow:disabled:hover{ transform:none; }
@@ -161,45 +121,28 @@
     body{ padding-left: 8px; padding-right: 8px; }
   }
 
-  /* Desktop / ecrãs largos: as setas flutuam sobre as margens do painel,
-     em vez de ficarem numa linha por baixo (isso fica só para o telemóvel) */
+  /* Desktop / ecrãs largos: as setas ficam ao lado do painel, fora da imagem
+     (no telemóvel, acima, ficam numa linha por baixo, para o painel poder
+     ocupar quase toda a largura) */
   @media (min-width: 641px){
-    .controls{
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      transform: translateY(-50%);
-      margin-top: 0;
-      justify-content: space-between;
-      padding: 0 8px;
-      pointer-events: none;
-    }
-    .controls .arrow{ pointer-events: auto; }
+    .viewer{ flex-wrap: nowrap; }
+    .frame{ order: 2; flex: 1 1 auto; }
+    #prevBtn{ order: 1; flex: 0 0 auto; }
+    #nextBtn{ order: 3; flex: 0 0 auto; }
   }
 </style>
 </head>
 <body>
 
-  <div class="news-ticker" id="newsTicker">
-    <div class="news-ticker__track" id="newsTrack">
-      <span class="news-ticker__seg" id="newsSeg1">A carregar notícias…</span>
-      <span class="news-ticker__seg" id="newsSeg2" aria-hidden="true">A carregar notícias…</span>
-    </div>
-  </div>
-
   <div class="viewer">
-    <div class="stage">
-      <div class="frame">
-        <img id="stripImage" src="" alt="" style="display:none;">
-        <div id="stateMsg" class="state-msg">A carregar…</div>
-      </div>
+    <button class="arrow" id="prevBtn" aria-label="Painel anterior"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+
+    <div class="frame">
+      <img id="stripImage" src="" alt="" style="display:none;">
+      <div id="stateMsg" class="state-msg">A carregar…</div>
     </div>
 
-    <div class="controls">
-      <button class="arrow" id="prevBtn" aria-label="Painel anterior"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
-      <button class="arrow" id="nextBtn" aria-label="Painel seguinte"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
-    </div>
+    <button class="arrow" id="nextBtn" aria-label="Painel seguinte"><i class="ti ti-arrow-right" aria-hidden="true"></i></button>
   </div>
 
 <script>
@@ -223,14 +166,6 @@
   //   02-01 - Outra Tira.png
   //
   // Também aceita ficheiros só com "NN - Título.png" (tira de um único painel).
-  // =================================================================
-
-  // =================================================================
-  // FAIXA DE NOTÍCIAS — preenche a tua chave gratuita do rss2json.com
-  // (Sign up em rss2json.com, copia a "API Key", cola aqui em baixo)
-  // =================================================================
-  const RSS2JSON_KEY = "A-TUA-CHAVE-RSS2JSON-AQUI";
-  const NEWS_FEED_URL = "https://feeds.bbci.co.uk/news/world/rss.xml";
   // =================================================================
 
   const IMAGE_EXT = /\.(png|jpe?g|gif|webp)$/i;
@@ -478,62 +413,6 @@
   });
 
   loadStrips();
-
-  // ---------------------------------------------------------------
-  // FAIXA DE NOTÍCIAS
-  // ---------------------------------------------------------------
-  const newsTicker = document.getElementById('newsTicker');
-  const newsTrack = document.getElementById('newsTrack');
-  const newsSeg1 = document.getElementById('newsSeg1');
-  const newsSeg2 = document.getElementById('newsSeg2');
-
-  function setTickerColor(){
-    newsTicker.style.setProperty('--ticker-bg', randomPaletteColor());
-  }
-
-  function startTickerAnimation(){
-    // velocidade constante, independente do tamanho do texto
-    const pxPerSecond = 70;
-    const width = newsSeg1.getBoundingClientRect().width;
-    const duration = Math.max(width / pxPerSecond, 10);
-    newsTrack.style.animationDuration = duration + 's';
-  }
-
-  async function loadNews(){
-    setTickerColor();
-
-    if (RSS2JSON_KEY === "A-TUA-CHAVE-RSS2JSON-AQUI"){
-      const msg = "Falta configurar a chave do rss2json.com no index.html   •   ";
-      newsSeg1.textContent = msg;
-      newsSeg2.textContent = msg;
-      startTickerAnimation();
-      return;
-    }
-
-    try {
-      const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(NEWS_FEED_URL)}&api_key=${RSS2JSON_KEY}&count=20`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data.status !== 'ok' || !data.items || data.items.length === 0){
-        throw new Error('sem notícias');
-      }
-
-      const headlines = data.items.map(item => item.title);
-      const text = headlines.join('   •   ') + '   •   ';
-      newsSeg1.textContent = text;
-      newsSeg2.textContent = text;
-      startTickerAnimation();
-    } catch (err){
-      const msg = "Não foi possível carregar as notícias de momento   •   ";
-      newsSeg1.textContent = msg;
-      newsSeg2.textContent = msg;
-      startTickerAnimation();
-    }
-  }
-
-  loadNews();
-  setInterval(loadNews, 15 * 60 * 1000); // atualiza as notícias a cada 15 minutos
 </script>
 </body>
 </html>
